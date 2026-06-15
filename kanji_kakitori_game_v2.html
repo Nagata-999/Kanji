@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>漢字書き取りゲーム</title>
+<style>
+:root{--bg:#f6f7fb;--card:#fff;--ink:#111;--muted:#667085;--blue:#2563eb;--ok:#16a34a;--mid:#f59e0b;--ng:#ef4444}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",Meiryo,sans-serif}.wrap{max-width:680px;margin:0 auto;padding:14px}.top{display:flex;justify-content:space-between;align-items:center}.title{font-size:20px;font-weight:900}.pill{font-size:12px;font-weight:900;background:#e8eefc;color:#1d4ed8;border-radius:999px;padding:7px 10px}.card{background:#fff;border-radius:20px;box-shadow:0 10px 25px rgba(16,24,40,.08);padding:16px;margin:12px 0}.small{font-size:13px;line-height:1.6;color:var(--muted)}.hide{display:none!important}.row{display:flex;gap:8px;flex-wrap:wrap}.btn{appearance:none;border:0;border-radius:14px;padding:13px 12px;font-size:16px;font-weight:900;flex:1;min-width:110px}.primary{background:var(--blue);color:#fff}.light{background:#eef2f7;color:#111}.ok{background:var(--ok);color:#fff}.mid{background:var(--mid);color:#fff}.ng{background:var(--ng);color:#fff}.ghost{background:#fff;border:2px solid #d0d5dd;color:#111}.qno{font-size:13px;font-weight:900;color:var(--muted)}.progress{height:12px;background:#e5e7eb;border-radius:999px;overflow:hidden}.bar{height:100%;width:0%;background:#2563eb}.reading{text-align:center;font-size:34px;line-height:1.25;font-weight:900;margin:12px 0}.kanji{color:#dc2626}.hint{text-align:center;color:var(--muted);font-size:13px}.canvasBox{background:#fff;border:3px solid #d0d5dd;border-radius:18px;overflow:hidden;margin:12px auto;max-width:420px;position:relative}.canvasBox:before,.canvasBox:after{content:"";position:absolute;background:#eef2f7;pointer-events:none}.canvasBox:before{left:50%;top:0;bottom:0;width:1px}.canvasBox:after{top:50%;left:0;right:0;height:1px}canvas{display:block;width:100%;height:310px;touch-action:none}.answer{display:none;text-align:center;margin:12px 0;font-size:34px;font-weight:900}.answer.show{display:block}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.stat{background:#f8fafc;border-radius:14px;padding:10px;text-align:center}.stat b{display:block;font-size:24px}.list{display:flex;flex-wrap:wrap;gap:8px}.chip{background:#eef2f7;border-radius:999px;padding:7px 10px;font-weight:900}.monster{text-align:center;font-size:44px}.hp{height:16px;background:#fee2e2;border-radius:999px;overflow:hidden}.hp div{height:100%;background:#ef4444;width:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><div class="title">漢字書き取りゲーム</div><div class="pill" id="saveMsg">OK</div></div>
+  <div id="start" class="card">
+    <h2 style="margin:0 0 8px">7C級 1/4 ちからだめし</h2>
+    <p class="small">読みを見て、白いマスに指で漢字を書こう。答えを見て、⭕️△❌で自己採点します。</p>
+    <div class="row"><button id="btnAll" class="btn primary">ぜんぶ練習</button><button id="btnRand" class="btn mid">ランダム</button></div>
+    <button id="btnReview" class="btn ghost" style="width:100%;margin-top:8px">❌だけ復習</button>
+  </div>
+  <div id="game" class="hide">
+    <div class="card">
+      <div class="row" style="align-items:center"><div class="qno" id="qno"></div><div style="flex:1"><div class="progress"><div id="bar" class="bar"></div></div></div></div>
+      <div class="reading" id="reading"></div>
+      <div class="hint">赤い部分を漢字で書こう</div>
+      <div class="canvasBox"><canvas id="pad" width="420" height="310"></canvas></div>
+      <div id="answer" class="answer"></div>
+      <div class="row"><button id="btnClear" class="btn light">消す</button><button id="btnShow" class="btn primary">答えを見る</button></div>
+      <div class="row" style="margin-top:8px"><button id="btnOk" class="btn ok">⭕️できた</button><button id="btnMid" class="btn mid">△もう少し</button><button id="btnNg" class="btn ng">❌できない</button></div>
+    </div>
+    <div class="card"><div class="monster">🐉</div><div class="hp"><div id="hpbar"></div></div><div class="hint" id="hptext"></div></div>
+  </div>
+  <div id="result" class="card hide">
+    <h2 style="margin:0 0 10px">結果</h2>
+    <div class="stats"><div class="stat"><b id="okN">0</b>⭕️</div><div class="stat"><b id="midN">0</b>△</div><div class="stat"><b id="ngN">0</b>❌</div></div>
+    <div id="weakBox"></div>
+    <div class="row" style="margin-top:14px"><button id="btnAgain" class="btn primary">弱点だけもう一回</button><button id="btnHome" class="btn light">最初へ</button></div>
+  </div>
+</div>
+<script>
+(function(){
+'use strict';
+var QUESTIONS=[
+{r:'てい気圧',a:'低気圧',k:'低'},{r:'目てき',a:'目的',k:'的'},{r:'言いつたえ',a:'言い伝え',k:'伝'},{r:'とう台',a:'灯台',k:'灯'},{r:'人とく',a:'人徳',k:'徳'},{r:'ねっ湯',a:'熱湯',k:'熱'},{r:'やぶれた者',a:'敗れた者',k:'敗'},{r:'大阪に行く',a:'大阪に行く',k:'阪'},{r:'とび入り',a:'飛び入り',k:'飛'},{r:'ひょう本',a:'標本',k:'標'},{r:'ふ近',a:'付近',k:'付'},{r:'豊ふ',a:'豊富',k:'富'},{r:'ひょう庫県',a:'兵庫県',k:'兵'},{r:'水ベ',a:'水辺',k:'辺'},{r:'べん所',a:'便所',k:'便'},{r:'つつみ紙',a:'包み紙',k:'包'},{r:'ぼく草',a:'牧草',k:'牧'},{r:'みち潮',a:'満ち潮',k:'満'},{r:'む罪',a:'無罪',k:'無'},{r:'いさましい',a:'勇ましい',k:'勇'},{r:'やしなう',a:'養う',k:'養'},{r:'大りく',a:'大陸',k:'陸'},{r:'数りょう',a:'数量',k:'量'},{r:'衣るい',a:'衣類',k:'類'},{r:'ひやあせ',a:'冷や汗',k:'冷'},{r:'たとえば',a:'例えば',k:'例'},{r:'ろう化',a:'老化',k:'老'}];
+var order=[],idx=0,results={},hp=100,memWeak=[];
+function el(id){return document.getElementById(id)}
+function safeGet(){try{return JSON.parse(localStorage.getItem('kanjiWeak')||'[]')}catch(e){return memWeak}}
+function safeSet(v){memWeak=v;try{localStorage.setItem('kanjiWeak',JSON.stringify(v));el('saveMsg').textContent='保存済み'}catch(e){el('saveMsg').textContent='一時保存'}}
+function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t}return a}
+function mark(q){return q.r.replace(q.k,'<span class="kanji">'+q.k+'</span>')}
+function startGame(mode){order=[];for(var i=0;i<QUESTIONS.length;i++)order.push(i);if(mode==='random')shuffle(order);idx=0;hp=100;results={};el('start').classList.add('hide');el('result').classList.add('hide');el('game').classList.remove('hide');loadQ()}
+function startReview(){var weak=safeGet();if(!weak.length){alert('まだ復習する問題がありません。まずは練習しよう。');return}order=weak.slice();idx=0;hp=100;results={};el('start').classList.add('hide');el('result').classList.add('hide');el('game').classList.remove('hide');loadQ()}
+function loadQ(){if(idx>=order.length){finish();return}var q=QUESTIONS[order[idx]];el('qno').textContent=(idx+1)+' / '+order.length;el('reading').innerHTML=mark(q);el('answer').innerHTML='正解：'+q.a;el('answer').classList.remove('show');el('bar').style.width=(idx/order.length*100)+'%';el('hpbar').style.width=hp+'%';el('hptext').textContent='ドラゴン HP '+hp;clearPad()}
+function showAnswer(){el('answer').classList.add('show')}
+function grade(g){var qi=order[idx];results[qi]=g;if(g==='ok')hp=Math.max(0,hp-12);if(g==='mid')hp=Math.max(0,hp-5);idx++;saveWeak();loadQ()}
+function saveWeak(){var weak=[];for(var k in results){if(results[k]!=='ok')weak.push(Number(k))}safeSet(weak)}
+function finish(){el('game').classList.add('hide');el('result').classList.remove('hide');var ok=0,mid=0,ng=0;for(var k in results){if(results[k]==='ok')ok++;else if(results[k]==='mid')mid++;else if(results[k]==='ng')ng++}el('okN').textContent=ok;el('midN').textContent=mid;el('ngN').textContent=ng;var weak=safeGet();if(weak.length){var html='<h3>弱点リスト</h3><div class="list">';for(var i=0;i<weak.length;i++)html+='<span class="chip">'+QUESTIONS[weak[i]].a+'</span>';html+='</div>';el('weakBox').innerHTML=html}else{el('weakBox').innerHTML='<h3>全問クリア！強い。</h3>'}}
+function home(){el('result').classList.add('hide');el('game').classList.add('hide');el('start').classList.remove('hide');results={}}
+var canvas=el('pad'),ctx=canvas.getContext('2d'),drawing=false,last=null;ctx.lineWidth=9;ctx.lineCap='round';ctx.lineJoin='round';
+function pos(e){var r=canvas.getBoundingClientRect();var t=e.touches?e.touches[0]:e;return{x:(t.clientX-r.left)*canvas.width/r.width,y:(t.clientY-r.top)*canvas.height/r.height}}
+function down(e){if(e.cancelable)e.preventDefault();drawing=true;last=pos(e)}
+function move(e){if(!drawing)return;if(e.cancelable)e.preventDefault();var p=pos(e);ctx.beginPath();ctx.moveTo(last.x,last.y);ctx.lineTo(p.x,p.y);ctx.stroke();last=p}
+function up(){drawing=false}
+function clearPad(){ctx.clearRect(0,0,canvas.width,canvas.height)}
+el('btnAll').addEventListener('click',function(){startGame('normal')});el('btnRand').addEventListener('click',function(){startGame('random')});el('btnReview').addEventListener('click',startReview);el('btnAgain').addEventListener('click',startReview);el('btnHome').addEventListener('click',home);el('btnClear').addEventListener('click',clearPad);el('btnShow').addEventListener('click',showAnswer);el('btnOk').addEventListener('click',function(){grade('ok')});el('btnMid').addEventListener('click',function(){grade('mid')});el('btnNg').addEventListener('click',function(){grade('ng')});
+canvas.addEventListener('touchstart',down,{passive:false});canvas.addEventListener('touchmove',move,{passive:false});canvas.addEventListener('touchend',up,false);canvas.addEventListener('mousedown',down,false);canvas.addEventListener('mousemove',move,false);window.addEventListener('mouseup',up,false);
+})();
+</script>
+</body>
+</html>
